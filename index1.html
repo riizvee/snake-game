@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Snake Game</title>
+
+<style>
+body {
+  margin: 0;
+  background: #111;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-family: Arial;
+  color: white;
+}
+
+.container {
+  text-align: center;
+}
+
+.score {
+  font-size: 22px;
+  margin-bottom: 10px;
+  color: lime;
+}
+
+.game-box {
+  width: 400px;
+  height: 400px;
+  background: #222;
+  border: 3px solid lime;
+  position: relative;
+  box-shadow: 0 0 15px lime;
+  border-radius: 8px;
+}
+
+.part {
+  width: 20px;
+  height: 20px;
+  background: lime;
+  position: absolute;
+  border-radius: 4px;
+}
+
+.food {
+  width: 20px;
+  height: 20px;
+  background: red;
+  position: absolute;
+  border-radius: 50%;
+}
+
+.game-over {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  color: lime;
+  font-size: 26px;
+}
+
+.game-over button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background: lime;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="score">Score: 0</div>
+
+  <div class="game-box">
+    <h1>game of aklima</h1>
+    <div class="game-over">
+      <div id="finalScore">Game Over</div>
+      <button onclick="restartGame()">Restart</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const box = document.querySelector(".game-box");
+const scoreEl = document.querySelector(".score");
+const gameOverEl = document.querySelector(".game-over");
+const finalScoreEl = document.getElementById("finalScore");
+
+const SIZE = 400;
+const STEP = 20;
+
+let snake = [];
+let dir = "right";
+let score = 0;
+let loop;
+let isGameOver = false;
+
+// create snake
+function initSnake() {
+  snake = [];
+
+  for (let i = 0; i < 5; i++) {
+    const part = document.createElement("div");
+    part.className = "part";
+    box.appendChild(part);
+
+    snake.push({
+      x: 100 - i * STEP,
+      y: 100,
+      el: part
+    });
+  }
+}
+
+// food
+const food = document.createElement("div");
+food.className = "food";
+box.appendChild(food);
+
+let fx = 0;
+let fy = 0;
+
+function spawnFood() {
+  fx = Math.floor(Math.random() * (SIZE / STEP)) * STEP;
+  fy = Math.floor(Math.random() * (SIZE / STEP)) * STEP;
+
+  for (let s of snake) {
+    if (s.x === fx && s.y === fy) {
+      spawnFood();
+      return;
+    }
+  }
+
+  food.style.left = fx + "px";
+  food.style.top = fy + "px";
+}
+
+// draw
+function render() {
+  snake.forEach(s => {
+    s.el.style.left = s.x + "px";
+    s.el.style.top = s.y + "px";
+  });
+}
+
+// controls
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" && dir !== "left") dir = "right";
+  if (e.key === "ArrowLeft" && dir !== "right") dir = "left";
+  if (e.key === "ArrowUp" && dir !== "down") dir = "up";
+  if (e.key === "ArrowDown" && dir !== "up") dir = "down";
+});
+
+// game over
+function endGame() {
+  isGameOver = true;
+  clearInterval(loop);
+  finalScoreEl.innerText = "Game Over! Score: " + score;
+  gameOverEl.style.display = "flex";
+}
+
+// restart
+function restartGame() {
+  snake.forEach(s => s.el.remove());
+
+  score = 0;
+  dir = "right";
+  isGameOver = false;
+
+  scoreEl.innerText = "Score: 0";
+  gameOverEl.style.display = "none";
+
+  initSnake();
+  spawnFood();
+
+  loop = setInterval(update, 120);
+}
+
+// main loop
+function update() {
+
+  if (isGameOver) return;
+
+  // move body
+  for (let i = snake.length - 1; i > 0; i--) {
+    snake[i].x = snake[i - 1].x;
+    snake[i].y = snake[i - 1].y;
+  }
+
+  // move head
+  if (dir === "right") snake[0].x += STEP;
+  if (dir === "left") snake[0].x -= STEP;
+  if (dir === "up") snake[0].y -= STEP;
+  if (dir === "down") snake[0].y += STEP;
+
+  // wall collision
+  if (
+    snake[0].x < 0 || snake[0].y < 0 ||
+    snake[0].x >= SIZE || snake[0].y >= SIZE
+  ) return endGame();
+
+  // self collision
+  for (let i = 1; i < snake.length; i++) {
+    if (snake[0].x === snake[i].x && snake[0].y === snake[i].y) {
+      return endGame();
+    }
+  }
+
+  // eat food
+  if (snake[0].x === fx && snake[0].y === fy) {
+    score++;
+    scoreEl.innerText = "Score: " + score;
+
+    const part = document.createElement("div");
+    part.className = "part";
+    box.appendChild(part);
+
+    snake.push({
+      x: snake[snake.length - 1].x,
+      y: snake[snake.length - 1].y,
+      el: part
+    });
+
+    spawnFood();
+  }
+
+  render();
+}
+
+// start
+initSnake();
+spawnFood();
+loop = setInterval(update, 120);
+
+</script>
+
+</body>
+</html>
